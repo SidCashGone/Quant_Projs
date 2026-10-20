@@ -6,4 +6,4 @@ Most recent projects will be on the top of the list, followed by older completed
 2. Heston Model for Calculating Implied Volatility of Stock Pricing
 3. Simple XGBoost for PLTR Price Prediction
 4. European Black-Scholes Model VS Numerical Approximation Methods
-5. Generic Monte-Carlo Simulator
+5. Mini Monte-Carlo Portfolio Simulator
