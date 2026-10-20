@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import minimize, minimize_scalar
 from ns_model import nelson_siegel, calibrate
+from nss_model import calibrate_nss, calculate_nss
 
 """Import data"""
 
@@ -50,7 +51,9 @@ def get_curve(df, date):
         return ValueError(f"Only {len(tau)} points for {date}: need at least 4 to fit 4 parameters.")
     return tau, y 
 
-#FITTING
+"""
+Fitting for Original NS Model: uses minimize_scalar for lambda
+"""
 
 def solve_betas(tau, y_obs, lambd):
     """Use linear least squares to solve for b0, b1, b2"""
@@ -80,4 +83,45 @@ def fit_ns(tau, y_obs):
     b0, b1, b2 = solve_betas(tau, y_obs, lambd)
     return b0, b1, b2, lambd
 
+"""
+Fitting for NSS: use minimize to ensure lambda_1 and 2 are not identical
+"""
+def solve_betas_nss(tau, y_obsv, lambd1, lambd2):
+    """Use Linear Least Squares for b0, b1, b2, b3"""
+    f0, f1, f2, f3 = calibrate_nss(tau, lambd1, lambd2)
+    X = np.column_stack([f0, f1, f2, f3])
+    betas, *_ = np.linalg.lstsq(X, y_obsv, rcond=None)
+    return betas
 
+def fit_nss(tau, y_obsv):
+    """Fit NSS Params"""
+
+    tau = np.asarray(tau, dtype=float)
+    y_obsv = np.asarray(y_obsv, dtype=float)
+
+    def sse(params):
+        l1, l2 = params
+
+        if l1 >= l2:
+            #Bound constraint failsafe
+            return 1e12
+
+        b0, b1, b2, b3 = solve_betas_nss(tau, y_obsv, l1, l2)
+        resid = calculate_nss(tau, b0, b1, b2, b3, l1, l2) - y_obsv
+        return np.sum(resid**2)
+
+    """
+    Define some initial guesses to check if curve fits within NS results
+    Else, modify to adjust
+    """
+    init_guess = [1.5, 8.0]
+    #Bounds; strictly enforce lambda1 < lambda2
+    bounds = [(0.1, 4.9), (5.0, 30.0)]
+
+    res = minimize(sse, init_guess, method='L-BFGS-B', bounds=bounds)
+    l1, l2 = res.x
+    b0, b1, b2, b3 = solve_betas_nss(tau, y_obsv, l1, l2)
+
+    return b0, b1, b2, b3, l1, b2
+
+    
