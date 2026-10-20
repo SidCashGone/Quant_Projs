@@ -17,3 +17,14 @@ lambda: decay parameter: the rate of decay of slope & curvature w.r.t. maturity.
 - We will use the U.S treasury data, via daily yield returns. This is open-source (available through their website).
 - Current dataset: Using 2025 rates for tests.
 - Rates available: 4, 6, 8, 13, 17, 26, 52 weeks (for 2025)
+
+2. Fitting data
+We write a method such that we properly fit the columns based on the timeframe that we are looking at (in years). Once done, then create an array that is formatted within the (tau, y_obs) order for each date, dropping all empty values.
+
+3. Models
+The original model is used to find the yield curves. As the original equation yields a single, smooth curve, it does not fit for more irregular data. Hence, the introduction of other models is being added.
+
+Nelson-Siegel-Svensson:
+We add a second decay factor, as well as beta_3, an extra dependent variable, in order to account for an extra hump in the yield rates, which was not previously accounted for in the original model. In this case, the cases occurred are the variables:
+Beta_3: Creates the curvature of the model, influenced by lambda_1
+Beta_3: Creates the ‘hump’ / second curvature, influenced by lambda_2
